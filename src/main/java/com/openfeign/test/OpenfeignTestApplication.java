@@ -1,27 +1,35 @@
 package com.openfeign.test;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.cloud.openfeign.SpringQueryMap;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@FeignClient(name = "server-xxxxxx", url = "http://localhost:8080")
-interface CandlestickClient {
+@FeignClient(name = "TestClient", url = "http://localhost:8080")
+interface TestClient {
 
-	@GetMapping("/{resourceName}/endpoint")
-	List<String> getCandlesticks(@PathVariable(name = "resourceName") String resourceName);
+	@GetMapping(path = "/test/array")
+	void testArray(@SpringQueryMap Map<String, String[]> paramMap);
+
+	@GetMapping(path = "/test/list")
+	void testList(@SpringQueryMap Map<String, List<Object>> paramMap);
+
 }
 
 @SpringBootApplication
 @RestController
-@EnableFeignClients(clients = { CandlestickClient.class })
+@EnableFeignClients(clients = { TestClient.class })
 public class OpenfeignTestApplication {
 
 	public static void main(String[] args) {
@@ -29,27 +37,45 @@ public class OpenfeignTestApplication {
 	}
 
 	@Autowired
-	CandlestickClient candlestickClient;
+	TestClient testClient;
 
-	@GetMapping(value = "/test")
-	public void test() {
-		System.out.println(candlestickClient.getCandlesticks("hello1"));
-		System.out.println(candlestickClient.getCandlesticks("hello2"));
+	@GetMapping(path = "/testArray")
+	public void TestArray() {
+		Map<String, String[]> paramMap = new HashMap<>(2);
+		paramMap.put("a", new String[] { "a1", "a2" });
+		paramMap.put("b", new String[] { "b1", "b2" });
+
+		testClient.testArray(paramMap);
 	}
 
-	@GetMapping(value = "/hello1/endpoint")
-	public List<String> hello1() {
-		List<String> list = new ArrayList<>();
-		list.add("hello");
-		list.add("world");
-		return list;
+	@GetMapping(path = "/testList")
+	public void TestList() {
+		Map<String, List<Object>> paramMap = new HashMap<>(2);
+
+		ArrayList<Object> listA = new ArrayList<>();
+		listA.add("a1");
+		listA.add("a2");
+
+		ArrayList<Object> listB = new ArrayList<>();
+		listB.add("b1");
+		listB.add("b2");
+
+		paramMap.put("a", listA);
+		paramMap.put("b", listB);
+
+		testClient.testList(paramMap);
 	}
 
-	@GetMapping(value = "/hello2/endpoint")
-	public List<String> hello2() {
-		List<String> list = new ArrayList<>();
-		list.add("openfeign");
-		list.add("test");
-		return list;
+	@GetMapping(path = "/test/array")
+	void testArray(@RequestHeader Map<String, Object> header, @RequestParam Map<String, String[]> paramMap) {
+		System.out.println(header);
+		System.out.println(paramMap);
 	}
+
+	@GetMapping(path = "/test/list")
+	void get(@RequestHeader Map<String, Object> header, @RequestParam Map<String, List<Object>> paramMap) {
+		System.out.println(header);
+		System.out.println(paramMap);
+	}
+
 }
